@@ -1,31 +1,17 @@
+# launch/gazebo.launch.py
 import os
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription
+from launch.actions import ExecuteProcess
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import PathJoinSubstitution
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    pkg_share = FindPackageShare(package='slam_robot').find('slam_robot')
+    pkg_share = get_package_share_directory('slam_robot')
     world_path = os.path.join(pkg_share, 'worlds', 'rectangular_world.sdf')
-    urdf_path = os.path.join(pkg_share, 'urdf', 'slam_robot.xacro')
 
-    # Start Gazebo Ignition
+    # Launch Gazebo Ignition with your world
     gazebo = ExecuteProcess(
         cmd=['ign', 'gazebo', '-r', world_path],
-        output='screen'
-    )
-
-    # Spawn robot
-    spawn_robot = Node(
-        package='ros_gz_sim',
-        executable='create',
-        arguments=[
-            '-name', 'slam_robot',
-            '-file', urdf_path,
-            '-x', '0', '-y', '0', '-z', '0.1'
-        ],
         output='screen'
     )
 
@@ -33,7 +19,7 @@ def generate_launch_description():
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{'robot_description': open(urdf_path).read()}],
+        parameters=[{'robot_description': open(os.path.join(pkg_share, 'urdf', 'slam_robot.xacro')).read()}],
         output='screen'
     )
 
@@ -53,7 +39,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         gazebo,
-        spawn_robot,
         robot_state_publisher,
         bridge
     ])
